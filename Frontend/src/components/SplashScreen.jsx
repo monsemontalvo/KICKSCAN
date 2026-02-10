@@ -17,13 +17,26 @@ const SplashScreen = ({ onComplete }) => {
         transition={{ duration: 1, type: "spring" }}
         className="text-center"
       >
-        <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_50px_rgba(37,99,235,0.5)]">
-            <span className="text-4xl">⚽</span>
-        </div>
-        <h1 className="text-4xl font-bold text-white tracking-widest font-sans">
+        
+        {/* 👇 AQUÍ ESTÁ EL CAMBIO DEL REBOTE 👇 */}
+        <Motion.div 
+            className="mb-6 inline-block"
+            animate={{ y: [0, -40, 0] }} // 1. Empieza en 0, 2. Sube -40px, 3. Baja a 0
+            transition={{
+                duration: 0.8, // Tarda 0.8 segundos en hacer el rebote completo
+                repeat: Infinity, // Se repite por siempre
+                ease: "easeInOut" // Movimiento suave
+            }}
+        >
+            <span className="text-9xl filter drop-shadow-[0_0_30px_rgba(37,99,235,0.6)]">
+              ⚽
+            </span>
+        </Motion.div>
+
+        <h1 className="text-5xl font-black text-white tracking-widest font-sans">
           KICK<span className="text-blue-500">SCAN</span>
         </h1>
-        <p className="text-gray-400 text-xs mt-2 tracking-[0.3em] uppercase">Aumented Reality</p>
+        <p className="text-blue-200/50 text-xs mt-3 tracking-[0.4em] uppercase font-bold">Aumented Reality</p>
       </Motion.div>
 
       {/* Barra de carga falsa */}
