@@ -1,29 +1,73 @@
+// ============================================
+// IMPORTACIONES - Librerías y dependencias
+// ============================================
+
+// React hooks: useEffect (efectos secundarios), useRef (referencias), useState (estado)
 import React, { useEffect, useRef, useState } from 'react';
+
+// Iconos de lucide-react para la interfaz
 import { ArrowLeft, BarChart3, BookOpen, HelpCircle, Camera, X, ChevronDown, Play } from 'lucide-react';
+
+// Hook de React Router para navegación entre páginas
 import { useNavigate } from 'react-router-dom';
+
+// Three.js: librería 3D para gráficos
 import * as THREE from 'three';
+
+// MindAR: librería de realidad aumentada basada en reconocimiento de imágenes
 import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js';
-import { countriesData } from '../../data/countries'; // Asegúrate de tener este archivo creado
+
+// Datos de países con estadísticas, datos curiosos y trivia
+import { countriesData } from '../../data/countries';
+
+// ============================================
+// COMPONENTE PRINCIPAL: ARScene
+// ============================================
+// Este componente gestiona la experiencia completa de escaneo AR
+// Incluye: cámara en vivo, HUD de escaneo, panel de resultados estilo iOS
 
 const ARScene = () => {
+  // ---- REFERENCIAS Y HOOKS ----
+  // Hook para navegar a otras páginas
   const navigate = useNavigate();
+  
+  // Referencia al contenedor donde se renderizará la cámara AR
   const containerRef = useRef(null);
+  
+  // Bandera para evitar inicializar AR dos veces (útil para React StrictMode)
   const isInit = useRef(false);
   
-  // --- ESTADOS ---
+  // ---- ESTADOS DEL COMPONENTE ----
+  // Si el motor AR ha iniciado correctamente
   const [started, setStarted] = useState(false);
+  
+  // Si un objetivo fue detectado/escaneado
   const [scanned, setScanned] = useState(false);
-  // Estado para controlar si el panel inferior está expandido o a media altura
+  
+  // Si el panel inferior (sheet) está expandido a altura máxima o a media altura
   const [sheetExpanded, setSheetExpanded] = useState(false); 
+  
+  // ID del país actualmente seleccionado/detectado
   const [selectedCountryId, setSelectedCountryId] = useState('mexico'); 
+  
+  // Pestaña activa en el panel: 'stats' (estadísticas), 'facts' (datos), 'trivia' (preguntas)
   const [activeTab, setActiveTab] = useState('stats'); 
+  
+  // Si la respuesta de trivia está visible o oculta
   const [showTriviaAnswer, setShowTriviaAnswer] = useState(false);
 
-  // Obtener datos del país seleccionado
+  // ---- BÚSQUEDA DE DATOS ----
+  // Obtener los datos completos del país seleccionado del archivo de datos
+  // Si no existe, usa el primer país como fallback
   const country = countriesData.find(c => c.id === selectedCountryId) || countriesData[0];
 
-  // --- INICIAR CÁMARA ---
+  // ============================================
+  // EFECTO: Inicializar motor AR y cámara
+  // ============================================
+  // Se ejecuta UNA SOLA VEZ al montar el componente
+  // Inicializa MindAR, configura la escena 3D y comienza el streaming de cámara
   useEffect(() => {
+    // Evitar reinicialización (importante para React StrictMode)
     if (isInit.current) return;
     isInit.current = true;
     let mindarThree = null;
@@ -32,67 +76,119 @@ const ARScene = () => {
       if (!containerRef.current) return;
       try {
         console.log("🚀 Iniciando Motor AR...");
+        
+        // Crear instancia de MindAR con configuración
         mindarThree = new MindARThree({
-          container: containerRef.current,
-          // Truco del cache-buster para asegurar la carga
+          container: containerRef.current,  // Contenedor donde se renderiza
+          // Cargar archivo de targets (estampas a detectar) desde la carpeta public/targets
+          // Agregar parámetro aleatorio para evitar cacheo inadecuado
           imageTargetSrc: '/targets/targets.mind?v=' + Math.floor(Math.random() * 1000),
-          uiLoading: "no", uiScanning: "no", filterMinCF: 0.0001, filterBeta: 0.001,
+          // No mostrar UI predeterminada de MindAR
+          uiLoading: "no", uiScanning: "no", 
+          // Parámetros de sensibilidad del detector (muy bajos = muy sensible)
+          filterMinCF: 0.0001, filterBeta: 0.001,
         });
         
+        // Obtener los componentes 3D principales
         const { renderer, scene, camera } = mindarThree;
         
-        // Luces
+        // ---- CONFIGURAR ILUMINACIÓN ----
+        // Luz hemisférica: blanca arriba, azulada abajo, para efecto natural
         const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
         scene.add(light);
         
-        // Anclaje
+        // ---- CREAR ANCLAJE ----
+        // Un anclaje es el punto 3D donde aparecerá el objeto al detectar una etiqueta
+        // El parámetro 0 se refiere al primer target (primera estampa) en el archivo .mind
         const anchor = mindarThree.addAnchor(0);
         
-        // Cubo Placeholder (Solo para debug visual si detecta real)
+        // ---- CREAR OBJETO 3D (CUBO DECORATIVO) ----
+        // Geometría: caja de 0.5x0.5x0.5 unidades
         const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const material = new THREE.MeshPhongMaterial({ color: 0x007AFF, transparent: true, opacity: 0.8 }); 
+        
+        // Material: azul (#007AFF) con transparencia
+        const material = new THREE.MeshPhongMaterial({ 
+          color: 0x007AFF,      // Azul iOS
+          transparent: true,    // Permitir transparencia
+          opacity: 0.8          // 80% opaco
+        }); 
+        
+        // Crear la malla 3D (geometría + material)
         const cube = new THREE.Mesh(geometry, material);
+        
+        // Agregar el cubo al anclaje (se moverá con el target detectado)
         anchor.group.add(cube);
         
-        // Eventos de detección real
+        // ---- EVENTO: CUANDO SE DETECTA UN OBJETIVO ----
+        // Se dispara cuando MindAR detecta exitosamente una estampa
         anchor.onTargetFound = () => { 
-            console.log("✅ Objetivo detectado!");
-            setScanned(true); 
+          console.log("✅ Objetivo detectado!");
+          // Cambiar estado para mostrar el panel de resultados
+          setScanned(true); 
         };
         
+        // Iniciar el streaming de la cámara
         await mindarThree.start();
+        // Marcar que AR está listo
         setStarted(true);
         
-        // Loop de animación 3D
+        // ---- LOOP DE ANIMACIÓN ----
+        // Se ejecuta 60 veces por segundo (60 FPS)
+        // Anima el cubo y renderiza la escena
         renderer.setAnimationLoop(() => {
-          cube.rotation.x += 0.01; cube.rotation.y += 0.02;
+          // Rotar el cubo continuamente para efecto visual
+          cube.rotation.x += 0.01;  // Rotación en eje X
+          cube.rotation.y += 0.02;  // Rotación en eje Y
+          
+          // Renderizar la escena 3D
           renderer.render(scene, camera);
         });
-      } catch (err) { console.error("Error AR:", err); }
+      } catch (err) { 
+        // Mostrar error si algo falla
+        console.error("Error AR:", err); 
+      }
     };
     
+    // Ejecutar la función de inicio
     startAR();
     
-    // Limpieza al salir
+    // ---- LIMPIEZA AL DESMONTAR ----
+    // Se ejecuta cuando el componente se desmonta (usuario navega a otra página)
+    // Detiene la cámara y libera recursos para evitar fugas de memoria
     return () => {
+      // Buscar el elemento <video> creado por MindAR
       const video = document.querySelector('video');
-      if (video) { video.srcObject?.getTracks().forEach(t => t.stop()); video.remove(); }
+      if (video) { 
+        // Detener todos los tracks de la cámara
+        video.srcObject?.getTracks().forEach(t => t.stop()); 
+        // Remover el elemento de video del DOM
+        video.remove(); 
+      }
     };
-  }, []);
+  }, []);  // Array vacío = ejecutar solo al montar
 
-  // --- HANDLERS ---
+  // ============================================
+  // FUNCIONES MANEJADORAS DE EVENTOS
+  // ============================================
+  
+  // Simula un escaneo exitoso (útil para pruebas sin usar AR real)
+  // Activa el panel de resultados
   const handleSimulateScan = () => {
     setScanned(true);
-    setSheetExpanded(false); // Inicia a media altura
+    setSheetExpanded(false);  // Panel inicia a media altura (no expandido)
   };
 
+  // Cierra el panel de resultados y resetea todos los estados
+  // Vuelve a la pantalla de escaneo
   const handleCloseCard = () => {
-    setScanned(false);
-    setActiveTab('stats');
-    setShowTriviaAnswer(false);
-    setSheetExpanded(false);
+    setScanned(false);              // Ocultar panel
+    setActiveTab('stats');           // Volver a pestaña por defecto
+    setShowTriviaAnswer(false);      // Ocultar respuesta de trivia
+    setSheetExpanded(false);         // Contraer panel
   };
 
+  // Alterna entre panel contraído (50vh) y expandido (85vh)
+  // El usuario puede arrastrar el "handle" para cambiar tamaño
   const toggleSheet = () => setSheetExpanded(!sheetExpanded);
 
   return (
@@ -102,7 +198,7 @@ const ARScene = () => {
       <div ref={containerRef} className="w-full h-full absolute top-0 left-0 z-0 scale-[1.02]" />
 
       {/* 2. HEADER APPLE STYLE */}
-      <div className="absolute top-0 w-full pt-12 pb-4 px-6 flex justify-between items-center z-50 bg-gradient-to-b from-black/80 to-transparent transition-all pointer-events-none">
+      <div className="absolute top-0 w-full pt-12 pb-4 px-6 flex justify-between items-center z-50 bg-linear-to-b from-black/80 to-transparent transition-all pointer-events-none">
         <button onClick={() => navigate('/')} className="pointer-events-auto bg-white/10 p-2.5 rounded-full text-white/90 backdrop-blur-md border border-white/10 active:scale-95 transition-all">
             <ArrowLeft size={20} />
         </button>
@@ -203,7 +299,7 @@ const ARScene = () => {
                   <div className="mb-6 animate-[fade-in_0.4s]">
                     <button 
                         onClick={() => navigate('/video-editor', { state: { country } })}
-                        className="w-full relative overflow-hidden bg-gradient-to-r from-[#007AFF] to-[#0055ff] p-4 rounded-[22px] flex items-center justify-between shadow-[0_8px_20px_rgba(0,122,255,0.3)] active:scale-[0.98] transition-all group"
+                        className="w-full relative overflow-hidden bg-linear-to-r from-[#007AFF] to-[#0055ff] p-4 rounded-[22px] flex items-center justify-between shadow-[0_8px_20px_rgba(0,122,255,0.3)] active:scale-[0.98] transition-all group"
                     >
                         {/* Brillo decorativo */}
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -219,7 +315,7 @@ const ARScene = () => {
                         </div>
                         
                         <div className="bg-black/20 p-2 rounded-full backdrop-blur-sm">
-                             <ChevronDown className="text-white rotate-[-90deg]" size={16} />
+                             <ChevronDown className="text-white -rotate-90" size={16} />
                         </div>
                     </button>
                   </div>
@@ -252,7 +348,7 @@ const ARScene = () => {
                       )}
 
                       {activeTab === 'trivia' && (
-                          <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 p-6 rounded-[25px] text-center border border-white/10 animate-[fade-in_0.3s]">
+                          <div className="bg-linear-to-br from-indigo-900/30 to-purple-900/30 p-6 rounded-[25px] text-center border border-white/10 animate-[fade-in_0.3s]">
                               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
                                 <HelpCircle className="text-yellow-400" size={24} />
                               </div>
@@ -291,26 +387,64 @@ const ARScene = () => {
   );
 };
 
-// --- COMPONENTES UI AUXILIARES ---
+// ════════════════════════════════════════════════════════════════════════════
+// COMPONENTES UI AUXILIARES - Componentes pequeños reutilizables
+// ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * TabButton - Botón para cambiar entre pestañas
+ * @param {boolean} active - Si esta pestaña está activa
+ * @param {function} onClick - Función a ejecutar al clickear
+ * @param {string} label - Texto a mostrar en el botón
+ */
 const TabButton = ({ active, onClick, label }) => (
-    <button onClick={onClick} className={`flex-1 py-2.5 rounded-full text-[12px] font-bold transition-all duration-300 ${active ? 'bg-gray-700/80 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}>
-        {label}
-    </button>
+  <button 
+    onClick={onClick} 
+    className={`
+      flex-1 py-2.5 rounded-full text-[12px] font-bold transition-all duration-300 
+      ${active 
+        ? 'bg-gray-700/80 text-white shadow-sm'               // Pestaña activa: fondo gris
+        : 'text-white/50 hover:text-white'                   // Pestaña inactiva: texto gris
+      }
+    `}
+  >
+    {label}
+  </button>
 );
 
+/**
+ * StatCard - Tarjeta para mostrar una estadística
+ * @param {string} label - Nombre de la estadística
+ * @param {string|number} value - Valor a mostrar
+ * @param {string} color - Clases de Tailwind para color y fondo
+ */
 const StatCard = ({ label, value, color }) => (
-    <div className={`p-3 rounded-[20px] text-center border ${color} backdrop-blur-md bg-opacity-10`}>
-        <p className="text-[9px] opacity-80 font-black uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-3xl font-black tracking-tight">{value}</p>
-    </div>
+  <div className={`p-3 rounded-[20px] text-center border ${color} backdrop-blur-md bg-opacity-10`}>
+    {/* Etiqueta pequeña */}
+    <p className="text-[9px] opacity-80 font-black uppercase tracking-wider mb-1">
+      {label}
+    </p>
+    {/* Valor grande */}
+    <p className="text-3xl font-black tracking-tight">{value}</p>
+  </div>
 );
 
+/**
+ * InfoRow - Fila de información con etiqueta y valor
+ * @param {string} label - Nombre de la información
+ * @param {string|number} value - Valor a mostrar
+ * @param {boolean} isHighlight - Si el valor debe estar en color azul (destacado)
+ */
 const InfoRow = ({ label, value, isHighlight }) => (
-    <div className="flex justify-between items-center p-4">
-        <span className="text-white/60 text-sm font-medium">{label}</span>
-        <span className={`text-base font-bold ${isHighlight ? 'text-blue-400' : 'text-white'}`}>{value}</span>
-    </div>
+  <div className="flex justify-between items-center p-4">
+    {/* Etiqueta a la izquierda */}
+    <span className="text-white/60 text-sm font-medium">{label}</span>
+    {/* Valor a la derecha, con color opcional */}
+    <span className={`text-base font-bold ${isHighlight ? 'text-blue-400' : 'text-white'}`}>
+      {value}
+    </span>
+  </div>
 );
 
+// Exportar el componente principal para usarlo en otras partes de la aplicación
 export default ARScene;
