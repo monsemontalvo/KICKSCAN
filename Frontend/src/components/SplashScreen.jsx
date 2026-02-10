@@ -23,7 +23,7 @@ const SplashScreen = ({ onComplete }) => {
         <h1 className="text-4xl font-bold text-white tracking-widest font-sans">
           KICK<span className="text-blue-500">SCAN</span>
         </h1>
-        <p className="text-gray-400 text-xs mt-2 tracking-[0.3em] uppercase">Augmented Reality</p>
+        <p className="text-gray-400 text-xs mt-2 tracking-[0.3em] uppercase">Aumented Reality</p>
       </Motion.div>
 
       {/* Barra de carga falsa */}
