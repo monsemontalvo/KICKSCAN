@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Scan, MapPin, Calendar } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 
-const MexicoMatch = ({ team1, team2, stadium, date }) => (
+const MexicoMatch = ({ team1, team2, abbr1, abbr2, stadium, date }) => (
   <Motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -19,15 +19,16 @@ const MexicoMatch = ({ team1, team2, stadium, date }) => (
         </div>
     </div>
 
+    {/* SECCIÓN ACTUALIZADA: Uso de abbr1 y abbr2 dinámicos */}
     <div className="flex items-center justify-between px-2">
         <div className="text-center w-1/3">
-            <div className="text-2xl mb-1">🇲🇽</div>
-            <p className="font-bold text-sm">{team1}</p>
+            <div className="text-2xl font-black text-white mb-1 tracking-wider">{abbr1}</div>
+            <p className="font-bold text-sm text-gray-300">{team1}</p>
         </div>
         <div className="text-gray-500 text-xs font-bold">VS</div>
         <div className="text-center w-1/3">
-            <div className="text-2xl mb-1">🇧🇷</div>
-            <p className="font-bold text-sm">{team2}</p>
+            <div className="text-2xl font-black text-white mb-1 tracking-wider">{abbr2}</div>
+            <p className="font-bold text-sm text-gray-300">{team2}</p>
         </div>
     </div>
 
@@ -44,14 +45,12 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
       
-      {/* SECCIÓN HERO (La parte impresionante de arriba) */}
+      {/* SECCIÓN HERO */}
       <div className="relative h-[65vh] w-full">
-        {/* Imagen de fondo de estadio */}
         <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1518605348400-43ded6012023?q=80&w=2670&auto=format&fit=crop')" }} // Foto de estadio oscuro
+            style={{ backgroundImage: "url('/img/FIFASCREEN.jpg')" }} 
         ></div>
-        {/* Degradado para que se lea el texto */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
         <div className="absolute bottom-0 left-0 w-full p-8 flex flex-col items-center text-center z-10">
@@ -67,7 +66,6 @@ const Home = () => {
                     Vive la experiencia de realidad aumentada en los estadios de México.
                 </p>
 
-                {/* BOTÓN PRINCIPAL DE ESCANEO */}
                 <button 
                     onClick={() => navigate('/scanner')}
                     className="relative group bg-white text-black pl-6 pr-8 py-4 rounded-full font-bold text-lg flex items-center gap-3 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform"
@@ -76,7 +74,6 @@ const Home = () => {
                         <Scan size={20} />
                     </div>
                     <span>Iniciar Escaneo AR</span>
-                    {/* Anillo de pulso animado */}
                     <span className="absolute -inset-1 rounded-full border border-white/30 animate-ping opacity-75"></span>
                 </button>
             </Motion.div>
@@ -87,27 +84,34 @@ const Home = () => {
       <div className="px-6 py-8 bg-black">
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <span className="w-1 h-6 bg-red-600 rounded-full block"></span>
-            Partidos en México
+            Partidos en Monterrey
         </h2>
 
+        {/* SECCIÓN ACTUALIZADA: Pasando las abreviaturas correspondientes */}
         <div className="space-y-4 pb-20">
             <MexicoMatch 
-                team1="México" 
-                team2="Brasil" 
-                stadium="Estadio Azteca, CDMX" 
-                date="11 Junio - 12:00 PM"
+                team1="Ucrania/Suecia/Polonia/Albania" 
+                abbr1="EUR" 
+                team2="Túnez" 
+                abbr2="TUN"
+                stadium="Estadio Monterrey, MTY" 
+                date="14 Junio - 22:00"
             />
              <MexicoMatch 
-                team1="Francia" 
-                team2="Alemania" 
-                stadium="Estadio Akron, GDL" 
-                date="14 Junio - 6:00 PM"
+                team1="Túnez" 
+                abbr1="TUN"
+                team2="Japón" 
+                abbr2="JPN"
+                stadium="Estadio Monterrey, MTY" 
+                date="20 Junio - 0:00"
             />
              <MexicoMatch 
-                team1="Argentina" 
-                team2="Portugal" 
-                stadium="Estadio BBVA, MTY" 
-                date="18 Junio - 8:00 PM"
+                team1="Sudáfrica" 
+                abbr1="RSA"
+                team2="República de Corea" 
+                abbr2="KOR"
+                stadium="Estadio Monterrey, MTY" 
+                date="24 Junio - 21:00"
             />
         </div>
       </div>
