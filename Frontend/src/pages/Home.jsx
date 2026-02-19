@@ -1,45 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scan, Calendar, Globe, ChevronDown } from 'lucide-react';
-import { motion as Motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
-
-// --- 1. DICCIONARIO DE TRADUCCIONES ---
-const translations = {
-  es: {
-    heroTitle: "MUNDIAL",
-    heroSubtitle: "EXPERIENCIA AR EN ESTADIOS",
-    scanBtn: "INICIAR ESCANEO",
-    matchesBtn: "PRÓXIMOS PARTIDOS",
-    lang: "ESP"
-  },
-  en: {
-    heroTitle: "WORLD CUP",
-    heroSubtitle: "AR STADIUM EXPERIENCE",
-    scanBtn: "START SCAN",
-    matchesBtn: "UPCOMING MATCHES",
-    lang: "ENG"
-  },
-  ko: {
-    heroTitle: "월드컵",
-    heroSubtitle: "경기장 AR 경험",
-    scanBtn: "스캔 시작",
-    matchesBtn: "다가오는 경기",
-    lang: "한국어"
-  },
-  fr: {
-    heroTitle: "COUPE DU MONDE",
-    heroSubtitle: "EXPÉRIENCE AR EN STADE",
-    scanBtn: "DÉMARRER LE SCAN",
-    matchesBtn: "PROCHAINS MATCHS",
-    lang: "FRA"
-  }
-};
+import { Scan } from 'lucide-react';
+import { motion as Motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [lang, setLang] = useState('es');
-  const [isLangOpen, setIsLangOpen] = useState(false);
-  const t = translations[lang];
 
   // ==========================================
   // LÓGICA DE MOVIMIENTO 3D (SOLO BALÓN)
@@ -48,7 +13,6 @@ const Home = () => {
   const mouseY = useMotionValue(0);
   const springConfig = { damping: 30, stiffness: 150, mass: 0.8 }; 
 
-  // --- BALÓN PRINCIPAL (Gigante) ---
   const ballRotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [20, -20]), springConfig);
   const ballRotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-20, 20]), springConfig);
   const ballX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, 40]), springConfig);
@@ -60,100 +24,95 @@ const Home = () => {
     mouseX.set(x);
     mouseY.set(y);
   };
-  // ==========================================
 
   return (
     <div 
-        // FONDO: Negro radial súper limpio y profundo
-        className="relative h-screen w-full bg-[radial-gradient(ellipse_at_center,_#222222_0%,_#000000_100%)] text-white font-sans overflow-hidden selection:bg-white/30"
+        className="relative h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden selection:bg-green-500/30"
         onMouseMove={handleMouseMove}
-        style={{ perspective: '1200px' }}
     >
-      
-      {/* --- TOP BAR (SELECTOR DE IDIOMA) --- */}
-      <div className="absolute top-0 right-0 z-50 p-6 md:p-10">
-          <div className="relative">
-              <button 
-                onClick={() => setIsLangOpen(!isLangOpen)} 
-                className="flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 pl-4 pr-5 py-2.5 rounded-full hover:bg-white/20 transition-colors shadow-lg"
-              >
-                  <Globe size={18} className="text-white" />
-                  <span className="text-sm font-black tracking-wider text-white">{t.lang}</span>
-                  <ChevronDown size={16} className={`text-white/70 transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
-              </button>
 
-              <AnimatePresence>
-                  {isLangOpen && (
-                      <Motion.div 
-                          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 mt-3 w-36 bg-[#111] border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50"
-                      >
-                          {Object.keys(translations).map((l) => (
-                              <button
-                                  key={l}
-                                  onClick={() => { setLang(l); setIsLangOpen(false); }}
-                                  className={`w-full text-left px-5 py-4 text-sm font-black hover:bg-white/10 transition-colors ${lang === l ? 'text-white bg-white/10' : 'text-gray-400'}`}
-                              >
-                                  {translations[l].lang}
-                              </button>
-                          ))}
-                      </Motion.div>
-                  )}
-              </AnimatePresence>
-          </div>
+      {/* --- CAPA Z-0: FONDO ESPACIAL --- */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#1a1a1a_0%,_#000000_100%)] z-0"></div>
+
+      {/* --- CAPA Z-10: PERSPECTIVE GRID 3D RESPONSIVO --- */}
+      <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" style={{ perspective: '800px' }}>
+        {/* El Plano 3D */}
+        <div 
+            className="absolute top-1/2 left-[-50vw] w-[200vw] h-[150vh] origin-top animate-[grid-flow_1.2s_linear_infinite]"
+            style={{
+                transform: 'rotateX(75deg)', // Crea la profundidad 3D inclinando el plano hacia adelante
+                backgroundImage: `
+                    linear-gradient(to right, rgba(34, 197, 94, 0.4) 2px, transparent 2px),
+                    linear-gradient(to bottom, rgba(34, 197, 94, 0.4) 2px, transparent 2px)
+                `,
+                backgroundSize: '100px 100px', // Tamaño de la cuadrícula
+                // Desvanecimiento gradual hacia el horizonte (arriba) y hacia el espectador (abajo)
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 100%)',
+                maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 100%)'
+            }}
+        ></div>
+        
+        {/* Resplandor neón en la línea del horizonte */}
+        <div className="absolute top-1/2 left-0 right-0 h-40 bg-gradient-to-b from-green-500/15 to-transparent blur-3xl -translate-y-1/2"></div>
       </div>
 
-      {/* --- CAPA Z-20: BALÓN COLOSAL 3D --- */}
-      <Motion.div
-          className="absolute top-1/2 left-1/2 -ml-[400px] -mt-[400px] md:-ml-[700px] md:-mt-[700px] w-[800px] h-[800px] md:w-[1400px] md:h-[1400px] z-20 pointer-events-none"
-          style={{ x: ballX, y: ballY, rotateX: ballRotateX, rotateY: ballRotateY }}
-      >
-          <img 
-              src="/img/ball-3d.png"
-              alt="Balón 3D"
-              // Sombra negra intensa para que se despegue del fondo
-              className="w-full h-full object-contain filter drop-shadow-[0_80px_100px_rgba(0,0,0,0.95)] opacity-95"
-          />
-      </Motion.div>
 
-      {/* --- CAPA Z-30: INTERFAZ CENTRAL (Textos y Botones) --- */}
-      <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
+      {/* --- CAPA Z-20: BALÓN 3D --- */}
+      <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none" style={{ perspective: '1200px' }}>
+        <Motion.div
+            className="w-[450px] h-[450px] md:w-[800px] md:h-[800px] mt-20 md:mt-0"
+            style={{ x: ballX, y: ballY, rotateX: ballRotateX, rotateY: ballRotateY }}
+        >
+            <img 
+                src="/img/ball-3d.png"
+                alt="Balón 3D"
+                className="w-full h-full object-contain filter drop-shadow-[0_40px_50px_rgba(0,0,0,1)] opacity-95"
+            />
+        </Motion.div>
+      </div>
+
+
+      {/* --- CAPA Z-30: INTERFAZ CENTRAL --- */}
+      <div className="absolute inset-0 z-30 flex flex-col items-center justify-start pt-24 md:justify-center md:pt-0 pointer-events-none">
           
           <Motion.div
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
-              className="flex flex-col items-center justify-center w-full px-4 drop-shadow-[0_15px_15px_rgba(0,0,0,0.9)]"
+              initial={{ opacity: 0, y: 30 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center w-full px-4"
           >
-              <h1 className="text-[5.5rem] md:text-[13rem] font-black leading-none tracking-tighter mb-0 text-white uppercase scale-y-110 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-                  {t.heroTitle} <span className="text-blue-500">26</span>
+              {/* TÍTULO PRINCIPAL */}
+              <h1 className="font-display text-[6rem] md:text-[14rem] leading-[0.8] tracking-wider mb-0 text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500 drop-shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                  MUNDIAL <span className="text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-green-600">26</span>
               </h1>
               
-              <p className="text-white text-sm md:text-3xl mt-4 md:mt-8 tracking-[0.2em] md:tracking-[0.4em] font-black uppercase text-center bg-black/40 backdrop-blur-md px-8 py-3 rounded-full border border-white/10">
-                  {t.heroSubtitle}
+              {/* SUBTÍTULO */}
+              <p className="font-sans text-green-400 text-xs md:text-sm mt-6 md:mt-8 tracking-[0.4em] md:tracking-[0.6em] font-semibold uppercase text-center bg-black/50 backdrop-blur-md px-12 py-3 rounded-full border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+                  Experiencia AR en Estadios
               </p>
 
-              {/* CONTENEDOR DE BOTONES */}
-              <div className="mt-12 md:mt-20 flex flex-col items-center gap-5 pointer-events-auto">
+              <div className="mt-12 md:mt-24 flex flex-col items-center gap-5 pointer-events-auto">
                   
-                  {/* BOTÓN PRINCIPAL: ESCANEO (Blanco) */}
+                  {/* BOTÓN PRINCIPAL */}
                   <button 
                       onClick={() => navigate('/scanner')}
-                      className="group bg-white text-black px-10 py-5 md:py-6 rounded-full font-black text-xl md:text-2xl flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(255,255,255,0.2)] hover:scale-105 hover:bg-gray-200 active:scale-95 transition-all w-full md:w-auto min-w-[300px]"
+                      className="group relative overflow-hidden bg-green-500/10 backdrop-blur-sm border border-green-500/40 text-white px-10 py-5 rounded-2xl font-bold text-lg md:text-xl flex items-center justify-center gap-4 transition-all duration-300 hover:bg-green-500 hover:border-green-400 hover:shadow-[0_0_50px_rgba(34,197,94,0.8)] active:scale-95 w-full md:w-auto min-w-[300px]"
                   >
-                      <Scan size={32} />
-                      <span className="tracking-widest uppercase">{t.scanBtn}</span>
-                  </button>
-
-                  {/* BOTÓN SECUNDARIO: PARTIDOS (Transparente) */}
-                  <button 
-                      onClick={() => navigate('/partidos')}
-                      className="group bg-transparent text-white/80 border-2 border-white/40 hover:border-white hover:text-white px-8 py-4 rounded-full font-bold text-sm md:text-base flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all w-full md:w-auto min-w-[300px] backdrop-blur-md"
-                  >
-                      <Calendar size={20} className="text-white/80 group-hover:text-white" />
-                      <span className="tracking-widest uppercase">{t.matchesBtn}</span>
+                      <Scan size={28} className="text-green-400 group-hover:text-white transition-colors" />
+                      <span className="tracking-[0.15em] uppercase mt-1">Iniciar Escaneo</span>
+                      
+                      {/* Brillo dinámico en hover */}
+                      <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1s_infinite]" />
                   </button>
 
               </div>
           </Motion.div>
+      </div>
+
+      {/* DETALLES DECORATIVOS TECH */}
+      <div className="absolute bottom-10 left-10 z-40 hidden md:flex flex-col opacity-60">
+          <p className="font-display text-sm tracking-[0.2em] text-green-500 mb-1">KICKSCAN // SYSTEM_READY</p>
+          <div className="w-32 h-[2px] bg-gradient-to-r from-green-500 via-green-400 to-transparent" />
       </div>
 
     </div>
